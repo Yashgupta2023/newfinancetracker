@@ -1,4 +1,4 @@
-let users = JSON.parse(localStorage.getItem('users')) || [];  // Fetch users from localStorage
+let users = JSON.parse(localStorage.getItem('users')) || [];
 let currentUser = null;
 let currentBudget = 0;
 let totalExpenses = 0;
@@ -37,72 +37,50 @@ function handleAuth() {
     const name = document.getElementById('name').value.trim();
     const contact = document.getElementById('contact').value.trim();
     const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
+    const password = document.getElementById('password').value.trim();
 
-    if (!name || !contact || !username || !password) {
-        alert('Please fill in all fields.');
+    if (document.getElementById('auth-title').textContent === 'Sign Up') {
+        const userExists = users.some(user => user.username === username);
+        if (userExists) {
+            alert('User already exists!');
+            return;
+        }
+        users.push({ name, contact, username, password, expenses: [] });
+        localStorage.setItem('users', JSON.stringify(users));
+        alert('Sign Up Successful! Please login.');
         return;
     }
 
-    // Always fetch the latest users from localStorage before attempting login or sign-up
-    users = JSON.parse(localStorage.getItem('users')) || [];
-
-    if (document.getElementById('auth-title').textContent === 'Sign Up') {
-        if (users.some(user => user.username === username)) {
-            alert('Username already exists. Please choose a different one.');
-            return;
-        }
-        users.push({ name, contact, username, password, budget: 0, expenses: [] });
-        localStorage.setItem('users', JSON.stringify(users));  // Save updated users
-        alert('Sign Up successful! Please login.');
-        toggleAuthMode();
-    } else {
-        const user = users.find(user => user.username === username && user.password === password);
-        if (user) {
-            currentUser = user;
-            currentBudget = user.budget;
-            totalExpenses = user.expenses.reduce((sum, expense) => sum + expense.amount, 0);
-            showWelcomeSection();
-        } else {
-            alert('Invalid username or password.');
-        }
+    const user = users.find(user => user.username === username && user.password === password);
+    if (!user) {
+        alert('Invalid credentials!');
+        return;
     }
-}
-
-function showWelcomeSection() {
-    document.getElementById('auth-section').style.display = 'none';
-    document.getElementById('welcome-section').style.display = 'block';
+    currentUser = user;
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    authSection.style.display = 'none';
+    welcomeSection.style.display = 'block';
     userNameDisplay.textContent = currentUser.name;
-    budgetDisplay.textContent = `Current Budget: ₹${currentBudget}`;
-}
-
-function showBudgetSection() {
-    document.getElementById('budget-section').style.display = 'block';
+    renderExpenses();
 }
 
 function setBudget(type) {
-    const budgetInput = document.getElementById('budget-input');
-    if (!budgetInput.value) {
-        alert('Please enter a budget value.');
+    const budgetInput = document.getElementById('budget-input').value;
+    if (!budgetInput || isNaN(budgetInput)) {
+        alert('Please enter a valid budget');
         return;
     }
 
-    const newBudget = parseFloat(budgetInput.value);
-    if (type === 'fresh') {
-        currentBudget = newBudget;
-    } else {
-        currentBudget += newBudget;
-    }
-    currentUser.budget = currentBudget;
-    localStorage.setItem('users', JSON.stringify(users));  // Save updated users
-
+    currentBudget = type === 'fresh' ? parseFloat(budgetInput) : currentBudget + parseFloat(budgetInput);
     budgetDisplay.textContent = `Current Budget: ₹${currentBudget}`;
-    alert('Budget updated successfully!');
-    document.getElementById('budget-section').style.display = 'none';
+    remainingBudgetDisplay.textContent = `Remaining Budget: ₹${currentBudget - totalExpenses}`;
 }
 
 function showExpenseSection() {
     document.getElementById('expense-section').style.display = 'block';
+    document.getElementById('budget-section').style.display = 'none';
+    document.getElementById('advice-section').style.display = 'none';
+    document.getElementById('expenses-section').style.display = 'none';
 }
 
 function addExpense() {
@@ -119,41 +97,61 @@ function addExpense() {
     totalExpenses += expenseAmount;
     localStorage.setItem('users', JSON.stringify(users));  // Save updated users
 
-    expenseList.innerHTML += `<li>${expenseCategory}: ₹${expenseAmount}</li>`;
+    const expenseItem = document.createElement('li');
+    expenseItem.innerHTML = `${expenseCategory}: ₹${expenseAmount} 
+                             <button onclick="editExpense(${currentUser.expenses.length - 1})">Edit</button> 
+                             <button onclick="deleteExpense(${currentUser.expenses.length - 1})">Delete</button>`;
+    expenseList.appendChild(expenseItem);
+
     document.getElementById('expense-amount').value = '';
     document.getElementById('expense-category').value = 'Food';
 }
 
-function viewAdvice() {
-    const adviceSection = document.getElementById('advice-section');
-    let adviceText = '';
+function editExpense(index) {
+    const newAmount = prompt("Enter new amount:", currentUser.expenses[index].amount);
+    const newCategory = prompt("Enter new category:", currentUser.expenses[index].category);
 
-    if (totalExpenses > currentBudget * 0.8) {
-        adviceText = 'You are spending a bit too much! Try to reduce expenses where possible. Consider saving more for future needs.';
-    } else if (totalExpenses <= currentBudget * 0.5) {
-        adviceText = 'Good job! You are managing your expenses well. Keep up the great work and consider investing a portion of your savings.';
-    } else {
-        adviceText = 'You are on track with your budget! Continue monitoring your spending to stay within your budget.';
+    if (newAmount && newCategory) {
+        currentUser.expenses[index].amount = parseFloat(newAmount);
+        currentUser.expenses[index].category = newCategory;
+
+        totalExpenses = currentUser.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        localStorage.setItem('users', JSON.stringify(users));  // Save updated users
+
+        renderExpenses();
     }
+}
 
-    const adviceList = document.getElementById('advice-list');
-    adviceList.innerHTML = `<li>${adviceText}</li>`;
-    adviceSection.style.display = 'block';
+function deleteExpense(index) {
+    currentUser.expenses.splice(index, 1);
+    totalExpenses = currentUser.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    localStorage.setItem('users', JSON.stringify(users));  // Save updated users
+    renderExpenses();
+}
+
+function renderExpenses() {
+    expenseList.innerHTML = '';
+    currentUser.expenses.forEach((expense, index) => {
+        const expenseItem = document.createElement('li');
+        expenseItem.innerHTML = `${expense.category}: ₹${expense.amount} 
+                                 <button onclick="editExpense(${index})">Edit</button> 
+                                 <button onclick="deleteExpense(${index})">Delete</button>`;
+        expenseList.appendChild(expenseItem);
+    });
+
+    remainingBudgetDisplay.textContent = `Remaining Budget: ₹${currentBudget - totalExpenses}`;
 }
 
 function viewExpenses() {
     const expensesSection = document.getElementById('expenses-section');
-    allExpensesList.innerHTML = currentUser.expenses.map(exp => `<li>${exp.category}: ₹${exp.amount}</li>`).join('');
-    remainingBudgetDisplay.textContent = `Remaining Budget: ₹${currentBudget - totalExpenses}`;
+    renderExpenses(); 
     expensesSection.style.display = 'block';
 }
 
 function logout() {
     currentUser = null;
-    currentBudget = 0;
-    totalExpenses = 0;
-    // Do not remove users from localStorage, so users can log back in
-    alert('Logged out successfully!');
-    window.location.reload();  // Reload page to reset everything
+    localStorage.removeItem('currentUser');
+    authSection.style.display = 'block';
+    welcomeSection.style.display = 'none';
 }
 
