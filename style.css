@@ -1,6 +1,6 @@
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #dff72773, #ff5733);
+    background: linear-gradient(135deg, #6a67ce, #bca4c5);
     margin: 0;
     padding: 0;
     display: flex;
@@ -25,7 +25,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #7a58beeb;
+    background-color: #f7f5f9eb;
     padding: 10px 20px;
     border-radius: 5px;
     margin-bottom: 20px;
@@ -35,7 +35,7 @@ body {
 }
 
 .navbar a {
-    color: white;
+    color: rgb(11, 11, 11);
     text-decoration: none;
     font-size: 18px;
     padding: 10px 20px;
@@ -44,17 +44,14 @@ body {
 }
 
 .navbar a:hover {
-    background-color: #ffbc00;
+    background-color: #d49be7;
     color: black;
 }
 
-.navbar .active {
-    background-color: #ffbc00;
-    color: black;
-}
+
 
 .auth-links a {
-    color: white;
+    color: rgba(4, 4, 4, 0.938);
     text-decoration: none;
     font-size: 16px;
     padding: 5px;
@@ -62,7 +59,7 @@ body {
 }
 
 .auth-links a:hover {
-    color: #ffbc00;
+    color: #e90ccf;
 }
 
 .container {
@@ -105,11 +102,5 @@ h1:hover {
 }
 
 .option-btn:hover {
-    background-color: #ffbc00;
+    background-color: #e2c2f0;
 }
-
-
-
-
-
-
